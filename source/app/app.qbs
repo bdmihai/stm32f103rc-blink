@@ -32,6 +32,7 @@ Product {
     Depends { name: 'stm32' }
     Depends { name: 'cmsis' }
     Depends { name: 'boot' }
+    Depends { name: 'hal' }
     Depends { name: 'runtime' }
     Depends { name: 'freertos' }
 

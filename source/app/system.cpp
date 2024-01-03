@@ -25,58 +25,59 @@
  |                                                                            |
  |___________________________________________________________________________*/
 
+#include <assert.h>
 #include "stm32f1xx.h"
+#include "stm32f1xx_hal.h"
 #include "gpio.h"
 #include "system.h"
 
 void system_init()
 {
-    /* enable the FLASH prefetch buffer */ 
-    SET_BIT(FLASH->ACR, FLASH_ACR_PRFTBE);
+    SystemInit();
 
-    /* enable the external High Speed Clock */
-    SET_BIT(RCC->CR, RCC_CR_HSEON);
-    do {
-    } while ((RCC->CR & RCC_CR_HSERDY_Msk) != RCC_CR_HSERDY);
+    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+    assert(HAL_Init() == HAL_OK);
 
-    /* configure the PLL: no pre-external divider, with x9 multiplier (8x9 = 72 MHz) */
-    MODIFY_REG(RCC->CFGR, RCC_CFGR_PLLSRC_Msk | RCC_CFGR_PLLMULL_Msk | RCC_CFGR_PLLXTPRE_Msk, RCC_CFGR_PLLSRC | RCC_CFGR_PLLMULL9);
+    /** Initializes the RCC Oscillators according to the specified parameters
+    * in the RCC_OscInitTypeDef structure.
+    */
+    RCC_OscInitTypeDef RCC_OscInitStruct;
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE|RCC_OSCILLATORTYPE_LSE;
+    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+    RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
+    RCC_OscInitStruct.LSEState = RCC_LSE_ON;
+    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+    RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
+    assert(HAL_RCC_OscConfig(&RCC_OscInitStruct) == HAL_OK);
 
-    /* enable PLL clock generation */
-    SET_BIT(RCC->CR, RCC_CR_PLLON);
-    do {
-    } while ((RCC->CR & RCC_CR_PLLRDY_Msk) != RCC_CR_PLLRDY);
+    /** Initializes the CPU, AHB and APB buses clocks
+    */
+    RCC_ClkInitTypeDef RCC_ClkInitStruct;
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                                  |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-    /* to correctly read data from FLASH memory, the number of wait states (LATENCY) 
-       must be correctly programmed according to the frequency of the CPU clock 
-       (HCLK) of the device. */
-    MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY_Msk, FLASH_ACR_LATENCY_1);
+    assert(HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) == HAL_OK);
 
-    /* set the highest APBx dividers in order to ensure that we do not go through
-        a non-spec phase whatever we decrease or increase HCLK. */
-    MODIFY_REG(RCC->CFGR, RCC_CFGR_PPRE1_Msk, RCC_CFGR_PPRE1_DIV16);
-    MODIFY_REG(RCC->CFGR, RCC_CFGR_PPRE2_Msk, RCC_CFGR_PPRE2_DIV16);
-    MODIFY_REG(RCC->CFGR, RCC_CFGR_HPRE_Msk, RCC_CFGR_HPRE_DIV1);
+    RCC_PeriphCLKInitTypeDef PeriphClkInit;
+    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_ADC
+                                         |RCC_PERIPHCLK_USB;
+    PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
+    PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
+    PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL_DIV1_5;
+    assert(HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) == HAL_OK);
 
-    /* set the SYSCLK to PLL */
-    MODIFY_REG(RCC->CFGR, RCC_CFGR_SW_Msk, RCC_CFGR_SW_PLL);
-    do {
-    } while ((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL);
+    __HAL_RCC_AFIO_CLK_ENABLE();
+    __HAL_RCC_PWR_CLK_ENABLE();
 
-    /* disable HSI clock */
-    CLEAR_BIT(RCC->CR, RCC_CR_HSION);
-    do {
-    } while ((RCC->CR & RCC_CR_HSIRDY_Msk) == RCC_CR_HSIRDY);
-
-    /* confgure the APB clocks */
-    MODIFY_REG(RCC->CFGR, RCC_CFGR_PPRE1_Msk, RCC_CFGR_PPRE1_DIV2);
-    MODIFY_REG(RCC->CFGR, RCC_CFGR_PPRE2_Msk, RCC_CFGR_PPRE2_DIV1);
-
-    /* enable APB2 ports clock */
-    SET_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPAEN);
-    SET_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPBEN);
-    SET_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPCEN);
-    SET_BIT(RCC->APB2ENR, RCC_APB2ENR_AFIOEN); // necessary for JTAG Disable (remapping)
+    /** NOJTAG: JTAG-DP Disabled and SW-DP Enabled
+    */
+    __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     /* set-up the vector table in ram */
     extern char __isr_vector_start;
@@ -85,5 +86,5 @@ void system_init()
 
 extern "C" unsigned int system_cpu_f()
 {
-    return 72000000U;
+    return SystemCoreClock;
 }

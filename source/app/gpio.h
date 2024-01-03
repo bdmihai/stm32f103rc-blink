@@ -27,6 +27,11 @@
  
 #pragma once
 
+#define LED_Pin GPIO_PIN_11
+#define LED_GPIO_Port GPIOB
+#define FAN_Pin GPIO_PIN_8
+#define FAN_GPIO_Port GPIOA
+
 /* initialization */
 void gpio_init();
 

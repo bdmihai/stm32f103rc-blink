@@ -24,10 +24,9 @@
  |  Author: Mihai Baneu                           Last modified: 15.Dec.2023  |
  |                                                                            |
  |___________________________________________________________________________*/
- 
+
 #include "stm32f1xx.h"
-#include "stm32rtos.h"
-#include "queue.h"
+#include "stm32f1xx_hal.h"
 #include "gpio.h"
 
 void gpio_init()
@@ -35,17 +34,31 @@ void gpio_init()
     /* NOJTAG: JTAG-DP Disabled and SW-DP Enabled */
     MODIFY_REG(AFIO->MAPR, AFIO_MAPR_SWJ_CFG_Msk, AFIO_MAPR_SWJ_CFG_JTAGDISABLE);
 
-    /* configure LED pin */
-    /* set the pis 11 as output low speed (max 2MHz) */
-    MODIFY_REG(GPIOB->CRH, GPIO_CRH_CNF11_Msk | GPIO_CRH_MODE11_Msk, GPIO_CRH_MODE11_1);
+    /* GPIO Ports Clock Enable */
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+    __HAL_RCC_GPIOD_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+
+    /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+
+    GPIO_InitTypeDef GPIO_InitStruct;
+
+    /*Configure GPIO pin : PtPin */
+    GPIO_InitStruct.Pin = LED_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 }
 
 void gpio_set_led()
 {
-    GPIOB->BSRR = GPIO_BSRR_BS11;
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 }
 
 void gpio_reset_led()
 {
-    GPIOB->BSRR = GPIO_BSRR_BR11;
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 }

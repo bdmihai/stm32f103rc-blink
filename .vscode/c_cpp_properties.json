@@ -8,6 +8,7 @@
                 "${workspaceFolder}/source/boot/**",
                 "${workspaceFolder}/source/runtime/**",
                 "${workspaceFolder}/source/freertos/**",
+                "${workspaceFolder}/source/hal/**",
                 "/usr/lib/gcc/arm-none-eabi/13.2.0/include/**",
                 "/usr/lib/gcc/arm-none-eabi/13.2.0/include-fixed/**",
                 "/usr/lib/gcc/arm-none-eabi/13.2.0/../../../../arm-none-eabi/include/**"
